@@ -1,0 +1,53 @@
+name: Daily Brief — Antonio Santana
+
+on:
+  schedule:
+    # 5:00 AM Venezuela Time (VET = UTC-4) = 09:00 UTC
+    # Runs Monday through Friday only
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  daily-brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Daily Brief
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are Antonio Santana's executive assistant. Prepare and publish his daily brief right now.
+
+            IMPORTANT — DAY LOGIC:
+            - If today is Monday, Tuesday, Wednesday or Thursday: get Today's meetings.
+            - If today is Friday: get NEXT MONDAY's meetings.
+            - Never show weekend days.
+
+            STEP 1 — GOOGLE CALENDAR:
+            Get all meetings for the correct day.
+            For each meeting extract:
+            - Start time (format: 10:00 AM)
+            - Meeting title or person name
+            - Department or category (Internal, External, PAI, OPE, etc.)
+            - List of attendees
+
+            STEP 2 — FATHOM:
+            For each meeting, search Fathom for the most recent past recording with the same person or meeting title.
+            - Only look at recordings from the last 30 days maximum.
+            - Never reference meetings from 2025.
+            - If the most recent recording is older than 30 days, write "Sin reuniones recientes".
+            - Always show the exact date of the recording you found.
+            - If no recording found, write "Primera reunion reciente".
+
+            STEP 3 — WRITE TO GOOGLE SHEET VIA COMPOSIO:
+            Sheet ID: 1EfmdfmGi-uO4FLEv7-bL9atVP_SM2p2pz_04mS_4sZg
+            Tab: 📅 Today's Brief
+
+            First clear range A3:G30, then write one row per meeting starting at A3.
+            Columns: A=Row#, B=Time, C=Meeting/Person, D=Department, E=Last Meeting date, F=What Was Discussed, G=Open Items
+            Rules: consecutive rows, no gaps, "—" if no data, never touch rows 1-2.
